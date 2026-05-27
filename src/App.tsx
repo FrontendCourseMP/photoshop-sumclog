@@ -1,121 +1,120 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useMemo, useRef, useState } from 'react'
+import type { ChangeEventHandler } from 'react'
+import { CanvasView } from './components/CanvasView'
+import { StatusBar } from './components/StatusBar'
+import { Toolbar } from './components/Toolbar'
+import { decodeGB7, encodeGB7 } from './utils/gb7'
+import { imageDataToBlob, loadRasterFile, triggerDownload } from './utils/imageIO'
 import './App.css'
 
+type SourceFormat = 'png' | 'jpg' | 'gb7'
+type SaveFormat = SourceFormat
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [imageData, setImageData] = useState<ImageData | null>(null)
+  const [sourceFormat, setSourceFormat] = useState<SourceFormat | null>(null)
+  const [saveFormat, setSaveFormat] = useState<SaveFormat>('png')
+  const [useMask, setUseMask] = useState(true)
+  const [baseName, setBaseName] = useState('image')
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  const imageWidth = imageData?.width ?? null
+  const imageHeight = imageData?.height ?? null
+
+  const acceptTypes = useMemo(() => '.png,.jpg,.jpeg,.gb7', [])
+
+  const handleFile = async (file: File) => {
+    const name = file.name.toLowerCase()
+    const nextBaseName = file.name.replace(/\.[^/.]+$/, '') || 'image'
+
+    try {
+      if (name.endsWith('.gb7')) {
+        const buffer = await file.arrayBuffer()
+        const decoded = decodeGB7(buffer)
+        setImageData(decoded.imageData)
+        setSourceFormat('gb7')
+        setSaveFormat('gb7')
+      } else {
+        const loaded = await loadRasterFile(file)
+        setImageData(loaded.imageData)
+        setSourceFormat(loaded.format)
+        setSaveFormat(loaded.format)
+      }
+
+      setBaseName(nextBaseName)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to load image file'
+      window.alert(message)
+    }
+  }
+
+  const handleOpenClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleInputChange: ChangeEventHandler<HTMLInputElement> = (
+    event,
+  ) => {
+    const file = event.target.files?.item(0)
+    if (file) {
+      void handleFile(file)
+    }
+    event.target.value = ''
+  }
+
+  const handleSave = async () => {
+    if (!imageData) {
+      return
+    }
+
+    try {
+      if (saveFormat === 'gb7') {
+        const buffer = encodeGB7(imageData, useMask)
+        const blob = new Blob([buffer], {
+          type: 'application/octet-stream',
+        })
+        triggerDownload(blob, `${baseName}.gb7`)
+        return
+      }
+
+      const blob = await imageDataToBlob(imageData, saveFormat)
+      triggerDownload(blob, `${baseName}.${saveFormat}`)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to save image file'
+      window.alert(message)
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app-shell">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={acceptTypes}
+        hidden
+        onChange={handleInputChange}
+      />
 
-      <div className="ticks"></div>
+      <Toolbar
+        hasImage={imageData !== null}
+        saveFormat={saveFormat}
+        useMask={useMask}
+        onOpenClick={handleOpenClick}
+        onSaveClick={() => void handleSave()}
+        onSaveFormatChange={setSaveFormat}
+        onUseMaskChange={setUseMask}
+      />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <CanvasView imageData={imageData} onFileDrop={(file) => void handleFile(file)} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <StatusBar
+        width={imageWidth}
+        height={imageHeight}
+        sourceFormat={sourceFormat}
+      />
+    </div>
   )
 }
 
