@@ -21,12 +21,14 @@ export function Toolbar({
 }: ToolbarProps) {
   return (
     <header className="toolbar">
-      <button type="button" className="toolbar-btn" onClick={onOpenClick}>
-        Open
+      <button type="button" className="toolbar-btn primary" onClick={onOpenClick}>
+        Открыть
       </button>
 
+      <span className="toolbar-separator" />
+
       <label className="toolbar-label" htmlFor="save-format">
-        Save as
+        Формат
       </label>
 
       <select
@@ -50,7 +52,7 @@ export function Toolbar({
             checked={useMask}
             onChange={(event) => onUseMaskChange(event.target.checked)}
           />
-          Include mask
+          Маска прозрачности
         </label>
       )}
 
@@ -60,7 +62,7 @@ export function Toolbar({
         disabled={!hasImage}
         onClick={onSaveClick}
       >
-        Save
+        Сохранить
       </button>
     </header>
   )

@@ -19,7 +19,7 @@ function detectRasterFormat(file: File): RasterFormat {
     return 'jpg'
   }
 
-  throw new Error('Unsupported raster format. Use PNG or JPG.')
+  throw new Error('Неподдерживаемый формат. Используйте PNG или JPG.')
 }
 
 function loadHtmlImage(file: File): Promise<HTMLImageElement> {
@@ -32,7 +32,7 @@ function loadHtmlImage(file: File): Promise<HTMLImageElement> {
     }
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl)
-      reject(new Error('Failed to load image file'))
+      reject(new Error('Не удалось загрузить изображение'))
     }
     image.src = objectUrl
   })
@@ -50,7 +50,7 @@ export async function loadRasterFile(file: File): Promise<LoadedRaster> {
 
   const ctx = canvas.getContext('2d')
   if (!ctx) {
-    throw new Error('2D canvas context is not available')
+    throw new Error('Canvas 2D недоступен')
   }
 
   ctx.drawImage(image, 0, 0)
@@ -74,7 +74,7 @@ export async function imageDataToBlob(
 
   const ctx = canvas.getContext('2d')
   if (!ctx) {
-    throw new Error('2D canvas context is not available')
+    throw new Error('Canvas 2D недоступен')
   }
 
   ctx.putImageData(imageData, 0, 0)
@@ -85,7 +85,7 @@ export async function imageDataToBlob(
     canvas.toBlob(
       (blob) => {
         if (!blob) {
-          reject(new Error('Failed to export image'))
+          reject(new Error('Не удалось экспортировать изображение'))
           return
         }
         resolve(blob)
