@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ChangeEventHandler } from 'react'
 import { CanvasView } from './components/CanvasView'
-import { MenuBar } from './components/MenuBar'
 import { SidePanel } from './components/SidePanel'
 import { StatusBar } from './components/StatusBar'
 import { Toolbar } from './components/Toolbar'
@@ -12,6 +11,59 @@ import './App.css'
 
 type SourceFormat = 'png' | 'jpg' | 'gb7'
 type SaveFormat = SourceFormat
+type ActiveTool = 'select' | 'eyedropper'
+type ChannelId = 'gray' | 'red' | 'green' | 'blue' | 'alpha'
+
+type ChannelVisibility = {
+  gray: boolean
+  red: boolean
+  green: boolean
+  blue: boolean
+  alpha: boolean
+}
+
+type EyedropperSample = {
+  x: number
+  y: number
+  r: number
+  g: number
+  b: number
+  lab: { l: number; a: number; b: number }
+}
+
+function rgbToLab(r: number, g: number, b: number) {
+  const normalize = (value: number) => {
+    const channel = value / 255
+    return channel <= 0.04045
+      ? channel / 12.92
+      : ((channel + 0.055) / 1.055) ** 2.4
+  }
+
+  const lr = normalize(r)
+  const lg = normalize(g)
+  const lb = normalize(b)
+
+  const x = lr * 0.4124 + lg * 0.3576 + lb * 0.1805
+  const y = lr * 0.2126 + lg * 0.7152 + lb * 0.0722
+  const z = lr * 0.0193 + lg * 0.1192 + lb * 0.9505
+
+  const refX = 0.95047
+  const refY = 1
+  const refZ = 1.08883
+
+  const f = (value: number) =>
+    value > 0.008856 ? Math.cbrt(value) : 7.787 * value + 16 / 116
+
+  const fx = f(x / refX)
+  const fy = f(y / refY)
+  const fz = f(z / refZ)
+
+  return {
+    l: 116 * fy - 16,
+    a: 500 * (fx - fy),
+    b: 200 * (fy - fz),
+  }
+}
 
 function App() {
   const [imageData, setImageData] = useState<ImageData | null>(null)
@@ -21,6 +73,17 @@ function App() {
   const [baseName, setBaseName] = useState('image')
   const [userScale, setUserScale] = useState<number | null>(null)
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
+  const [activeTool, setActiveTool] = useState<ActiveTool>('select')
+  const [channels, setChannels] = useState<ChannelVisibility>({
+    gray: true,
+    red: true,
+    green: true,
+    blue: true,
+    alpha: true,
+  })
+  const [eyedropperSample, setEyedropperSample] = useState<EyedropperSample | null>(
+    null,
+  )
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const imageWidth = imageData?.width ?? null
@@ -53,6 +116,66 @@ function App() {
 
   const displayScale = userScale ?? autoScale
 
+  const imageCharacteristics = useMemo(() => {
+    if (!imageData) {
+      return { isGrayscale: false, hasAlpha: false }
+    }
+
+    const data = imageData.data
+    let isGrayscale = true
+    let hasAlpha = false
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] !== data[i + 1] || data[i] !== data[i + 2]) {
+        isGrayscale = false
+      }
+      if (data[i + 3] !== 255) {
+        hasAlpha = true
+      }
+      if (!isGrayscale && hasAlpha) {
+        break
+      }
+    }
+    return { isGrayscale, hasAlpha }
+  }, [imageData])
+
+  const processedImageData = useMemo(() => {
+    if (!imageData) {
+      return null
+    }
+
+    const output = new ImageData(imageData.width, imageData.height)
+    const src = imageData.data
+    const dst = output.data
+    const isGray = imageCharacteristics.isGrayscale
+    const alphaOnly =
+      channels.alpha &&
+      (isGray
+        ? !channels.gray
+        : !channels.red && !channels.green && !channels.blue)
+
+    for (let i = 0; i < src.length; i += 4) {
+      const r = src[i]
+      const g = src[i + 1]
+      const b = src[i + 2]
+      const a = src[i + 3]
+
+      if (isGray) {
+        const gray = channels.gray ? r : 0
+        dst[i] = alphaOnly ? a : gray
+        dst[i + 1] = alphaOnly ? a : gray
+        dst[i + 2] = alphaOnly ? a : gray
+      } else {
+        dst[i] = alphaOnly ? a : channels.red ? r : 0
+        dst[i + 1] = alphaOnly ? a : channels.green ? g : 0
+        dst[i + 2] = alphaOnly ? a : channels.blue ? b : 0
+      }
+
+      dst[i + 3] = alphaOnly ? 255 : channels.alpha ? a : 255
+    }
+
+    return output
+  }, [channels, imageCharacteristics.isGrayscale, imageData])
+
   const handleFile = async (file: File) => {
     const name = file.name.toLowerCase()
     const nextBaseName = file.name.replace(/\.[^/.]+$/, '') || 'image'
@@ -73,6 +196,15 @@ function App() {
 
       setBaseName(nextBaseName)
       setUserScale(null)
+      setEyedropperSample(null)
+      setActiveTool('select')
+      setChannels({
+        gray: true,
+        red: true,
+        green: true,
+        blue: true,
+        alpha: true,
+      })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Не удалось загрузить файл'
@@ -93,13 +225,13 @@ function App() {
   }
 
   const handleSave = async () => {
-    if (!imageData) {
+    if (!processedImageData) {
       return
     }
 
     try {
       if (saveFormat === 'gb7') {
-        const buffer = encodeGB7(imageData, useMask)
+        const buffer = encodeGB7(processedImageData, useMask)
         const blob = new Blob([buffer], {
           type: 'application/octet-stream',
         })
@@ -107,13 +239,35 @@ function App() {
         return
       }
 
-      const blob = await imageDataToBlob(imageData, saveFormat)
+      const blob = await imageDataToBlob(processedImageData, saveFormat)
       triggerDownload(blob, `${baseName}.${saveFormat}`)
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Не удалось сохранить файл'
       window.alert(message)
     }
+  }
+
+  const toggleChannel = (channel: ChannelId) => {
+    setChannels((prev) => ({ ...prev, [channel]: !prev[channel] }))
+  }
+
+  const handleEyedropperSample = (x: number, y: number) => {
+    if (!imageData) {
+      return
+    }
+    const index = (y * imageData.width + x) * 4
+    const r = imageData.data[index]
+    const g = imageData.data[index + 1]
+    const b = imageData.data[index + 2]
+    setEyedropperSample({
+      x,
+      y,
+      r,
+      g,
+      b,
+      lab: rgbToLab(r, g, b),
+    })
   }
 
   return (
@@ -126,12 +280,6 @@ function App() {
         onChange={handleInputChange}
       />
 
-      <MenuBar
-        onOpenClick={handleOpenClick}
-        onSaveClick={() => void handleSave()}
-        canSave={imageData !== null}
-      />
-
       <Toolbar
         hasImage={imageData !== null}
         saveFormat={saveFormat}
@@ -142,25 +290,46 @@ function App() {
         onUseMaskChange={setUseMask}
       />
 
-      <div className="left-rail" aria-hidden="true">
-        <button type="button" className="rail-btn active" title="Выделение">
+      <div className="left-rail">
+        <button
+          type="button"
+          className={`rail-btn ${activeTool === 'select' ? 'active' : ''}`}
+          title="Выделение"
+          onClick={() => setActiveTool('select')}
+        >
           <svg viewBox="0 0 24 24">
             <path d="M4 4l8 18 2-8 8-2z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className={`rail-btn ${activeTool === 'eyedropper' ? 'active' : ''}`}
+          title="Пипетка"
+          onClick={() => setActiveTool('eyedropper')}
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M14 4l6 6-2 2-2-2-7.5 7.5a2.5 2.5 0 11-3.5-3.5L12.5 6l-2-2z" />
           </svg>
         </button>
       </div>
 
       <CanvasView
-        imageData={imageData}
+        imageData={processedImageData}
         displayScale={displayScale}
         onFileDrop={(file) => void handleFile(file)}
         onViewportReady={handleViewportReady}
+        onCanvasPick={activeTool === 'eyedropper' ? handleEyedropperSample : undefined}
       />
 
       <SidePanel
         imageData={imageData}
+        channels={channels}
+        isGrayscale={imageCharacteristics.isGrayscale}
+        hasAlpha={imageCharacteristics.hasAlpha}
         displayScale={displayScale}
         onScaleChange={setUserScale}
+        onChannelToggle={toggleChannel}
+        eyedropperSample={eyedropperSample}
       />
 
       <StatusBar
