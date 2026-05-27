@@ -4,7 +4,7 @@
   grid-template-columns: 44px minmax(0, 1fr) 232px;
   grid-template-rows: 30px 42px minmax(0, 1fr) 34px;
   grid-template-areas:
-    'menu menu menu'
+    'tools tools tools'
     'tools tools tools'
     'rail canvas side'
     'status status status';
@@ -148,6 +148,7 @@
   flex-direction: column;
   align-items: center;
   padding-top: 8px;
+  gap: 6px;
 }
 
 .rail-btn {
@@ -159,7 +160,7 @@
   color: #b8b8b8;
   display: grid;
   place-items: center;
-  cursor: default;
+  cursor: pointer;
 }
 
 .rail-btn svg {
@@ -272,6 +273,47 @@
 .zoom-control + input[type='range'] {
   width: 100%;
   accent-color: #3a78d8;
+}
+
+.channels-list {
+  display: grid;
+  gap: 6px;
+}
+
+.channel-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid #3a3a3a;
+  background: #2d2d2d;
+  color: #d8d8d8;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.channel-item:hover {
+  background: #343434;
+}
+
+.channel-item.active {
+  border-color: #3a78d8;
+  box-shadow: inset 0 0 0 1px #3a78d8;
+}
+
+.channel-thumb {
+  width: 52px;
+  height: auto;
+  border: 1px solid #4a4a4a;
+  display: block;
+}
+
+.eyedropper-data {
+  display: grid;
+  gap: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: #cfcfcf;
 }
 
 .status-bar {
