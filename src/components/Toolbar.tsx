@@ -25,8 +25,6 @@ export function Toolbar({
         Открыть
       </button>
 
-      <span className="toolbar-separator" />
-
       <label className="toolbar-label" htmlFor="save-format">
         Формат
       </label>

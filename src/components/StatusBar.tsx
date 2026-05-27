@@ -30,8 +30,6 @@ export function StatusBar({
   height,
   sourceFormat,
   displayScale,
-  canSave,
-  onSaveClick,
 }: StatusBarProps) {
   const hasSize = width !== null && height !== null
   const zoomPercent = Math.round(displayScale * 100)
@@ -44,18 +42,6 @@ export function StatusBar({
       <span className="status-info">
         {size} | {getColorDepth(sourceFormat)}
       </span>
-      <button
-        type="button"
-        className="status-save-btn"
-        disabled={!canSave}
-        onClick={onSaveClick}
-        title="Сохранить"
-        aria-label="Сохранить"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3v12m0 0l4-4m-4 4l-4-4M5 19h14" />
-        </svg>
-      </button>
     </footer>
   )
 }
