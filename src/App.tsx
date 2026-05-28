@@ -13,6 +13,7 @@ import {
   type InterpolationMethod,
 } from './utils/interpolation'
 import { computeInitialViewScalePercent } from './utils/viewport'
+import { CustomFilterDialog } from './components/CustomFilterDialog'
 import { LevelsDialog } from './components/LevelsDialog'
 import { ScaleImageDialog } from './components/ScaleImageDialog'
 import './App.css'
@@ -98,6 +99,8 @@ function App() {
   )
   const [levelsOpen, setLevelsOpen] = useState(false)
   const [levelsPreview, setLevelsPreview] = useState<ImageData | null>(null)
+  const [customFilterOpen, setCustomFilterOpen] = useState(false)
+  const [filterPreview, setFilterPreview] = useState<ImageData | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const imageWidth = imageData?.width ?? null
@@ -136,7 +139,7 @@ function App() {
     return { isGrayscale, hasAlpha }
   }, [imageData])
 
-  const baseImageData = levelsPreview ?? imageData
+  const baseImageData = filterPreview ?? levelsPreview ?? imageData
 
   const processedImageData = useMemo(() => {
     if (!baseImageData) {
@@ -325,9 +328,11 @@ function App() {
         onSaveClick={() => void handleSave()}
         onLevelsClick={() => setLevelsOpen(true)}
         onScaleClick={() => setScaleDialogOpen(true)}
+        onCustomFilterClick={() => setCustomFilterOpen(true)}
         canSave={imageData !== null}
         canLevels={imageData !== null}
         canScale={imageData !== null}
+        canCustomFilter={imageData !== null}
       />
 
       {imageData && scaleDialogOpen && (
@@ -336,9 +341,28 @@ function App() {
           onApply={(result) => {
             setImageData(result)
             setLevelsPreview(null)
+            setFilterPreview(null)
             setEyedropperSample(null)
           }}
           onClose={() => setScaleDialogOpen(false)}
+        />
+      )}
+
+      {imageData && customFilterOpen && (
+        <CustomFilterDialog
+          imageData={imageData}
+          hasAlpha={imageCharacteristics.hasAlpha}
+          onPreviewChange={setFilterPreview}
+          onApply={(result) => {
+            setImageData(result)
+            setFilterPreview(null)
+            setLevelsPreview(null)
+            setEyedropperSample(null)
+          }}
+          onClose={() => {
+            setCustomFilterOpen(false)
+            setFilterPreview(null)
+          }}
         />
       )}
 

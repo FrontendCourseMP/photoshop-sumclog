@@ -3,9 +3,11 @@ type MenuBarProps = {
   onSaveClick: () => void
   onLevelsClick: () => void
   onScaleClick: () => void
+  onCustomFilterClick: () => void
   canSave: boolean
   canLevels: boolean
   canScale: boolean
+  canCustomFilter: boolean
 }
 
 export function MenuBar({
@@ -13,9 +15,11 @@ export function MenuBar({
   onSaveClick,
   onLevelsClick,
   onScaleClick,
+  onCustomFilterClick,
   canSave,
   canLevels,
   canScale,
+  canCustomFilter,
 }: MenuBarProps) {
   return (
     <nav className="menu-bar" aria-label="Главное меню">
@@ -38,6 +42,18 @@ export function MenuBar({
           </button>
           <button type="button" disabled={!canScale} onClick={onScaleClick}>
             Масштаб…
+          </button>
+        </div>
+      </details>
+      <details className="menu-dropdown">
+        <summary>Фильтр</summary>
+        <div className="menu-dropdown-panel">
+          <button
+            type="button"
+            disabled={!canCustomFilter}
+            onClick={onCustomFilterClick}
+          >
+            Произвольный…
           </button>
         </div>
       </details>
