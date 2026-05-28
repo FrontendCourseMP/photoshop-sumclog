@@ -1,12 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ChangeEventHandler } from 'react'
 import { CanvasView } from './components/CanvasView'
+import { MenuBar } from './components/MenuBar'
 import { SidePanel } from './components/SidePanel'
 import { StatusBar } from './components/StatusBar'
 import { Toolbar } from './components/Toolbar'
 import { decodeGB7, encodeGB7 } from './utils/gb7'
 import { imageDataToBlob, loadRasterFile, triggerDownload } from './utils/imageIO'
 import { fitScaleToFullHd } from './utils/viewport'
+import { LevelsDialog } from './components/LevelsDialog'
 import './App.css'
 
 type SourceFormat = 'png' | 'jpg' | 'gb7'
@@ -28,6 +30,7 @@ type EyedropperSample = {
   r: number
   g: number
   b: number
+  a: number
   lab: { l: number; a: number; b: number }
 }
 
@@ -84,6 +87,8 @@ function App() {
   const [eyedropperSample, setEyedropperSample] = useState<EyedropperSample | null>(
     null,
   )
+  const [levelsOpen, setLevelsOpen] = useState(false)
+  const [levelsPreview, setLevelsPreview] = useState<ImageData | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const imageWidth = imageData?.width ?? null
@@ -138,13 +143,15 @@ function App() {
     return { isGrayscale, hasAlpha }
   }, [imageData])
 
+  const baseImageData = levelsPreview ?? imageData
+
   const processedImageData = useMemo(() => {
-    if (!imageData) {
+    if (!baseImageData) {
       return null
     }
 
-    const output = new ImageData(imageData.width, imageData.height)
-    const src = imageData.data
+    const output = new ImageData(baseImageData.width, baseImageData.height)
+    const src = baseImageData.data
     const dst = output.data
     const isGray = imageCharacteristics.isGrayscale
     const alphaOnly =
@@ -174,7 +181,7 @@ function App() {
     }
 
     return output
-  }, [channels, imageCharacteristics.isGrayscale, imageData])
+  }, [baseImageData, channels, imageCharacteristics.isGrayscale])
 
   const handleFile = async (file: File) => {
     const name = file.name.toLowerCase()
@@ -260,12 +267,14 @@ function App() {
     const r = imageData.data[index]
     const g = imageData.data[index + 1]
     const b = imageData.data[index + 2]
+    const a = imageData.data[index + 3]
     setEyedropperSample({
       x,
       y,
       r,
       g,
       b,
+      a,
       lab: rgbToLab(r, g, b),
     })
   }
@@ -279,6 +288,31 @@ function App() {
         hidden
         onChange={handleInputChange}
       />
+
+      <MenuBar
+        onOpenClick={handleOpenClick}
+        onSaveClick={() => void handleSave()}
+        onLevelsClick={() => setLevelsOpen(true)}
+        canSave={imageData !== null}
+        canLevels={imageData !== null}
+      />
+
+      {imageData && (
+        <LevelsDialog
+          open={levelsOpen}
+          imageData={imageData}
+          hasAlpha={imageCharacteristics.hasAlpha}
+          onPreviewChange={setLevelsPreview}
+          onApply={(result) => {
+            setImageData(result)
+            setLevelsPreview(null)
+          }}
+          onClose={() => {
+            setLevelsOpen(false)
+            setLevelsPreview(null)
+          }}
+        />
+      )}
 
       <Toolbar
         hasImage={imageData !== null}

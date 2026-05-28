@@ -16,6 +16,7 @@ type EyedropperSample = {
   r: number
   g: number
   b: number
+  a: number
   lab: { l: number; a: number; b: number }
 }
 
@@ -248,12 +249,28 @@ export function SidePanel({
         <div className="panel-body">
           {eyedropperSample ? (
             <div className="eyedropper-data">
+              <div
+                className="eyedropper-swatch"
+                title={`rgb(${eyedropperSample.r}, ${eyedropperSample.g}, ${eyedropperSample.b})`}
+                aria-label={`Цвет: ${eyedropperSample.r}, ${eyedropperSample.g}, ${eyedropperSample.b}`}
+              >
+                <div
+                  className="eyedropper-swatch-color"
+                  style={{
+                    backgroundColor: `rgba(${eyedropperSample.r}, ${eyedropperSample.g}, ${eyedropperSample.b}, ${eyedropperSample.a / 255})`,
+                  }}
+                />
+              </div>
               <span>
                 X: {eyedropperSample.x}, Y: {eyedropperSample.y}
               </span>
               <span>
-                RGB: {eyedropperSample.r}, {eyedropperSample.g}, {eyedropperSample.b}
+                RGB: {eyedropperSample.r}, {eyedropperSample.g},{' '}
+                {eyedropperSample.b}
               </span>
+              {hasAlpha && (
+                <span>Alpha: {eyedropperSample.a}</span>
+              )}
               <span>
                 LAB: {eyedropperSample.lab.l.toFixed(2)},{' '}
                 {eyedropperSample.lab.a.toFixed(2)},{' '}

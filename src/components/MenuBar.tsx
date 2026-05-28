@@ -1,10 +1,18 @@
 type MenuBarProps = {
   onOpenClick: () => void
   onSaveClick: () => void
+  onLevelsClick: () => void
   canSave: boolean
+  canLevels: boolean
 }
 
-export function MenuBar({ onOpenClick, onSaveClick, canSave }: MenuBarProps) {
+export function MenuBar({
+  onOpenClick,
+  onSaveClick,
+  onLevelsClick,
+  canSave,
+  canLevels,
+}: MenuBarProps) {
   return (
     <nav className="menu-bar" aria-label="Главное меню">
       <details className="menu-dropdown">
@@ -18,7 +26,14 @@ export function MenuBar({ onOpenClick, onSaveClick, canSave }: MenuBarProps) {
           </button>
         </div>
       </details>
-      <span className="menu-app-title">Редактор изображений</span>
+      <details className="menu-dropdown">
+        <summary>Изображение</summary>
+        <div className="menu-dropdown-panel">
+          <button type="button" disabled={!canLevels} onClick={onLevelsClick}>
+            Уровни…
+          </button>
+        </div>
+      </details>
     </nav>
   )
 }

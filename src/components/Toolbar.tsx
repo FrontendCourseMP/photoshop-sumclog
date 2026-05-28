@@ -14,16 +14,12 @@ export function Toolbar({
   hasImage,
   saveFormat,
   useMask,
-  onOpenClick,
   onSaveClick,
   onSaveFormatChange,
   onUseMaskChange,
 }: ToolbarProps) {
   return (
     <header className="toolbar">
-      <button type="button" className="toolbar-btn primary" onClick={onOpenClick}>
-        Открыть
-      </button>
 
       <label className="toolbar-label" htmlFor="save-format">
         Формат
