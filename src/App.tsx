@@ -7,8 +7,14 @@ import { StatusBar } from './components/StatusBar'
 import { Toolbar } from './components/Toolbar'
 import { decodeGB7, encodeGB7 } from './utils/gb7'
 import { imageDataToBlob, loadRasterFile, triggerDownload } from './utils/imageIO'
-import { fitScaleToFullHd } from './utils/viewport'
+import {
+  DEFAULT_INTERPOLATION,
+  resizeImageData,
+  type InterpolationMethod,
+} from './utils/interpolation'
+import { computeInitialViewScalePercent } from './utils/viewport'
 import { LevelsDialog } from './components/LevelsDialog'
+import { ScaleImageDialog } from './components/ScaleImageDialog'
 import './App.css'
 
 type SourceFormat = 'png' | 'jpg' | 'gb7'
@@ -74,8 +80,11 @@ function App() {
   const [saveFormat, setSaveFormat] = useState<SaveFormat>('png')
   const [useMask, setUseMask] = useState(true)
   const [baseName, setBaseName] = useState('image')
-  const [userScale, setUserScale] = useState<number | null>(null)
+  const [userViewScale, setUserViewScale] = useState<number | null>(null)
+  const [viewInterpolation, setViewInterpolation] =
+    useState<InterpolationMethod>(DEFAULT_INTERPOLATION)
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
+  const [scaleDialogOpen, setScaleDialogOpen] = useState(false)
   const [activeTool, setActiveTool] = useState<ActiveTool>('select')
   const [channels, setChannels] = useState<ChannelVisibility>({
     gray: true,
@@ -104,22 +113,6 @@ function App() {
       return { width, height }
     })
   }, [])
-
-  const autoScale = useMemo(() => {
-    if (!imageData || viewportSize.width <= 0 || viewportSize.height <= 0) {
-      return 1
-    }
-
-    const padding = 48
-    return fitScaleToFullHd(
-      imageData.width,
-      imageData.height,
-      viewportSize.width - padding,
-      viewportSize.height - padding,
-    )
-  }, [imageData, viewportSize])
-
-  const displayScale = userScale ?? autoScale
 
   const imageCharacteristics = useMemo(() => {
     if (!imageData) {
@@ -183,6 +176,43 @@ function App() {
     return output
   }, [baseImageData, channels, imageCharacteristics.isGrayscale])
 
+  const autoViewScalePercent = useMemo(() => {
+    if (!processedImageData || viewportSize.width <= 0 || viewportSize.height <= 0) {
+      return 100
+    }
+
+    return computeInitialViewScalePercent(
+      processedImageData.width,
+      processedImageData.height,
+      viewportSize.width,
+      viewportSize.height,
+    )
+  }, [processedImageData, viewportSize])
+
+  const viewScalePercent = userViewScale ?? autoViewScalePercent
+
+  const displayImageData = useMemo(() => {
+    if (!processedImageData) {
+      return null
+    }
+
+    const targetWidth = Math.max(
+      1,
+      Math.round((processedImageData.width * viewScalePercent) / 100),
+    )
+    const targetHeight = Math.max(
+      1,
+      Math.round((processedImageData.height * viewScalePercent) / 100),
+    )
+
+    return resizeImageData(
+      processedImageData,
+      targetWidth,
+      targetHeight,
+      viewInterpolation,
+    )
+  }, [processedImageData, viewScalePercent, viewInterpolation])
+
   const handleFile = async (file: File) => {
     const name = file.name.toLowerCase()
     const nextBaseName = file.name.replace(/\.[^/.]+$/, '') || 'image'
@@ -202,7 +232,8 @@ function App() {
       }
 
       setBaseName(nextBaseName)
-      setUserScale(null)
+      setUserViewScale(null)
+      setViewInterpolation(DEFAULT_INTERPOLATION)
       setEyedropperSample(null)
       setActiveTool('select')
       setChannels({
@@ -260,14 +291,14 @@ function App() {
   }
 
   const handleEyedropperSample = (x: number, y: number) => {
-    if (!imageData) {
+    if (!processedImageData) {
       return
     }
-    const index = (y * imageData.width + x) * 4
-    const r = imageData.data[index]
-    const g = imageData.data[index + 1]
-    const b = imageData.data[index + 2]
-    const a = imageData.data[index + 3]
+    const index = (y * processedImageData.width + x) * 4
+    const r = processedImageData.data[index]
+    const g = processedImageData.data[index + 1]
+    const b = processedImageData.data[index + 2]
+    const a = processedImageData.data[index + 3]
     setEyedropperSample({
       x,
       y,
@@ -293,13 +324,26 @@ function App() {
         onOpenClick={handleOpenClick}
         onSaveClick={() => void handleSave()}
         onLevelsClick={() => setLevelsOpen(true)}
+        onScaleClick={() => setScaleDialogOpen(true)}
         canSave={imageData !== null}
         canLevels={imageData !== null}
+        canScale={imageData !== null}
       />
 
-      {imageData && (
+      {imageData && scaleDialogOpen && (
+        <ScaleImageDialog
+          imageData={imageData}
+          onApply={(result) => {
+            setImageData(result)
+            setLevelsPreview(null)
+            setEyedropperSample(null)
+          }}
+          onClose={() => setScaleDialogOpen(false)}
+        />
+      )}
+
+      {imageData && levelsOpen && (
         <LevelsDialog
-          open={levelsOpen}
           imageData={imageData}
           hasAlpha={imageCharacteristics.hasAlpha}
           onPreviewChange={setLevelsPreview}
@@ -348,8 +392,8 @@ function App() {
       </div>
 
       <CanvasView
-        imageData={processedImageData}
-        displayScale={displayScale}
+        displayImageData={displayImageData}
+        pickImageData={processedImageData}
         onFileDrop={(file) => void handleFile(file)}
         onViewportReady={handleViewportReady}
         onCanvasPick={activeTool === 'eyedropper' ? handleEyedropperSample : undefined}
@@ -360,8 +404,10 @@ function App() {
         channels={channels}
         isGrayscale={imageCharacteristics.isGrayscale}
         hasAlpha={imageCharacteristics.hasAlpha}
-        displayScale={displayScale}
-        onScaleChange={setUserScale}
+        viewScalePercent={viewScalePercent}
+        interpolationMethod={viewInterpolation}
+        onScaleChange={setUserViewScale}
+        onInterpolationChange={setViewInterpolation}
         onChannelToggle={toggleChannel}
         eyedropperSample={eyedropperSample}
       />
@@ -370,9 +416,7 @@ function App() {
         width={imageWidth}
         height={imageHeight}
         sourceFormat={sourceFormat}
-        displayScale={displayScale}
-        canSave={imageData !== null}
-        onSaveClick={() => void handleSave()}
+        viewScalePercent={viewScalePercent}
       />
     </div>
   )

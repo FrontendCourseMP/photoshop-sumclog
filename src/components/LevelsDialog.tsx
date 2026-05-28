@@ -23,7 +23,6 @@ import {
 import './LevelsDialog.css'
 
 type LevelsDialogProps = {
-  open: boolean
   imageData: ImageData
   hasAlpha: boolean
   onPreviewChange: (preview: ImageData | null) => void
@@ -126,7 +125,7 @@ function LevelsSlider({
       if (!dragTarget) return
 
       const value = valueFromClientX(event.clientX)
-      let next = { ...levels }
+      const next = { ...levels }
 
       if (dragTarget === 'black') {
         next.inBlack = Math.min(value, levels.inWhite - 1)
@@ -192,7 +191,6 @@ function LevelsSlider({
 }
 
 export function LevelsDialog({
-  open,
   imageData,
   hasAlpha,
   onPreviewChange,
@@ -201,7 +199,7 @@ export function LevelsDialog({
 }: LevelsDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const histCanvasRef = useRef<HTMLCanvasElement>(null)
-  const snapshotRef = useRef<ImageData | null>(null)
+  const snapshotRef = useRef<ImageData>(cloneImageData(imageData))
 
   const [settings, setSettings] = useState<LevelsSettings>(DEFAULT_LEVELS_SETTINGS)
   const [activeChannel, setActiveChannel] = useState<LevelsChannel>('master')
@@ -215,7 +213,7 @@ export function LevelsDialog({
 
   const currentLevels = settings[activeChannel]
 
-  const [histogramSource, setHistogramSource] = useState(imageData)
+  const [histogramSource] = useState(() => cloneImageData(imageData))
 
   const histogram = useMemo(
     () => computeHistogram(histogramSource, activeChannel),
@@ -260,10 +258,11 @@ export function LevelsDialog({
   )
 
   useEffect(() => {
-    if (open) {
-      schedulePreview(settings)
+    const dialog = dialogRef.current
+    if (dialog && !dialog.open) {
+      dialog.showModal()
     }
-  }, [open, settings, previewEnabled, schedulePreview])
+  }, [])
 
   useEffect(() => {
     if (!previewEnabled) {
@@ -272,32 +271,6 @@ export function LevelsDialog({
     }
     schedulePreview(settings)
   }, [previewEnabled, settings, schedulePreview, onPreviewChange])
-
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-
-    if (open) {
-      const snapshot = cloneImageData(imageData)
-      snapshotRef.current = snapshot
-      setHistogramSource(snapshot)
-      setSettings({
-        master: { ...DEFAULT_CHANNEL_LEVELS },
-        red: { ...DEFAULT_CHANNEL_LEVELS },
-        green: { ...DEFAULT_CHANNEL_LEVELS },
-        blue: { ...DEFAULT_CHANNEL_LEVELS },
-        alpha: { ...DEFAULT_CHANNEL_LEVELS },
-      })
-      setActiveChannel('master')
-      setHistMode('linear')
-      setPreviewEnabled(true)
-      if (!dialog.open) {
-        dialog.showModal()
-      }
-    } else if (dialog.open) {
-      dialog.close()
-    }
-  }, [open, imageData])
 
   useEffect(() => {
     const canvas = histCanvasRef.current

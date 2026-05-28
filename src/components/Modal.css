@@ -1,0 +1,84 @@
+.app-modal {
+  border: 1px solid #3a3a3a;
+  border-radius: 0;
+  padding: 0;
+  background: #262626;
+  color: #efefef;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+}
+
+.app-modal::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.app-modal-inner {
+  display: flex;
+  flex-direction: column;
+  min-width: 360px;
+}
+
+.app-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #3a3a3a;
+  background: #2a2a2a;
+}
+
+.app-modal-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.app-modal-close {
+  border: 0;
+  background: transparent;
+  color: #c8c8c8;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.app-modal-close:hover {
+  color: #fff;
+}
+
+.app-modal-body {
+  padding: 14px;
+  overflow: auto;
+}
+
+.app-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid #3a3a3a;
+  background: #2a2a2a;
+}
+
+.app-modal-btn {
+  border: 1px solid #3a3a3a;
+  background: #303030;
+  color: #efefef;
+  font-size: 13px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.app-modal-btn:hover {
+  background: #3d3d3d;
+}
+
+.app-modal-btn-primary {
+  border-color: #3f6ec8;
+  background: #3a78d8;
+}
+
+.app-modal-btn-primary:hover {
+  background: #4a88e8;
+}

@@ -4,9 +4,7 @@ type StatusBarProps = {
   width: number | null
   height: number | null
   sourceFormat: SourceFormat
-  displayScale: number
-  canSave: boolean
-  onSaveClick: () => void
+  viewScalePercent: number
 }
 
 function getColorDepth(format: SourceFormat): string {
@@ -29,10 +27,10 @@ export function StatusBar({
   width,
   height,
   sourceFormat,
-  displayScale,
+  viewScalePercent,
 }: StatusBarProps) {
   const hasSize = width !== null && height !== null
-  const zoomPercent = Math.round(displayScale * 100)
+  const zoomPercent = Math.round(viewScalePercent)
   const size = hasSize
     ? `${width} × ${height} px @ ${zoomPercent}%`
     : '-- × -- px'

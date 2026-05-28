@@ -1,4 +1,9 @@
 import { useEffect, useRef } from 'react'
+import {
+  INTERPOLATION_METHODS,
+  type InterpolationMethod,
+} from '../utils/interpolation'
+import { VIEW_SCALE_MAX, VIEW_SCALE_MIN } from '../utils/viewport'
 
 type ChannelId = 'gray' | 'red' | 'green' | 'blue' | 'alpha'
 
@@ -25,8 +30,10 @@ type SidePanelProps = {
   channels: ChannelVisibility
   isGrayscale: boolean
   hasAlpha: boolean
-  displayScale: number
-  onScaleChange: (scale: number) => void
+  viewScalePercent: number
+  interpolationMethod: InterpolationMethod
+  onScaleChange: (percent: number) => void
+  onInterpolationChange: (method: InterpolationMethod) => void
   onChannelToggle: (channel: ChannelId) => void
   eyedropperSample: EyedropperSample | null
 }
@@ -36,8 +43,10 @@ export function SidePanel({
   channels,
   isGrayscale,
   hasAlpha,
-  displayScale,
+  viewScalePercent,
+  interpolationMethod,
   onScaleChange,
+  onInterpolationChange,
   onChannelToggle,
   eyedropperSample,
 }: SidePanelProps) {
@@ -163,7 +172,7 @@ export function SidePanel({
     visibleChannels.forEach(drawChannelPreview)
   }, [hasAlpha, imageData, isGrayscale])
 
-  const zoomPercent = Math.round(displayScale * 100)
+  const zoomPercent = Math.round(viewScalePercent)
   const channelRows: Array<{ id: ChannelId; label: string }> = isGrayscale
     ? hasAlpha
       ? [
@@ -202,13 +211,37 @@ export function SidePanel({
               <input
                 id="zoom-range"
                 type="range"
-                min={5}
-                max={100}
+                min={VIEW_SCALE_MIN}
+                max={VIEW_SCALE_MAX}
                 value={zoomPercent}
-                onChange={(event) =>
-                  onScaleChange(Number(event.target.value) / 100)
-                }
+                onChange={(event) => onScaleChange(Number(event.target.value))}
               />
+              <label className="zoom-control" htmlFor="interpolation-method">
+                Интерполяция
+              </label>
+              <select
+                id="interpolation-method"
+                value={interpolationMethod}
+                onChange={(event) =>
+                  onInterpolationChange(
+                    event.target.value as InterpolationMethod,
+                  )
+                }
+              >
+                {(Object.keys(INTERPOLATION_METHODS) as InterpolationMethod[]).map(
+                  (key) => (
+                    <option key={key} value={key}>
+                      {INTERPOLATION_METHODS[key].label}
+                    </option>
+                  ),
+                )}
+              </select>
+              <p
+                className="interpolation-hint"
+                title={INTERPOLATION_METHODS[interpolationMethod].description}
+              >
+                {INTERPOLATION_METHODS[interpolationMethod].description}
+              </p>
             </>
           ) : (
             <p className="panel-empty">Нет изображения</p>

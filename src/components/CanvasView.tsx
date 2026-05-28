@@ -2,16 +2,16 @@ import { useEffect, useRef } from 'react'
 import type { DragEventHandler, MouseEvent } from 'react'
 
 type CanvasViewProps = {
-  imageData: ImageData | null
-  displayScale: number
+  displayImageData: ImageData | null
+  pickImageData: ImageData | null
   onFileDrop: (file: File) => void
   onViewportReady: (width: number, height: number) => void
   onCanvasPick?: (x: number, y: number) => void
 }
 
 export function CanvasView({
-  imageData,
-  displayScale,
+  displayImageData,
+  pickImageData,
   onFileDrop,
   onViewportReady,
   onCanvasPick,
@@ -30,17 +30,17 @@ export function CanvasView({
       return
     }
 
-    if (!imageData) {
+    if (!displayImageData) {
       canvas.width = 1
       canvas.height = 1
       ctx.clearRect(0, 0, 1, 1)
       return
     }
 
-    canvas.width = imageData.width
-    canvas.height = imageData.height
-    ctx.putImageData(imageData, 0, 0)
-  }, [imageData])
+    canvas.width = displayImageData.width
+    canvas.height = displayImageData.height
+    ctx.putImageData(displayImageData, 0, 0)
+  }, [displayImageData])
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -71,29 +71,27 @@ export function CanvasView({
     event.preventDefault()
   }
 
-  const displayWidth = imageData
-    ? Math.round(imageData.width * displayScale)
-    : 0
-  const displayHeight = imageData
-    ? Math.round(imageData.height * displayScale)
-    : 0
-
   const handleCanvasClick = (event: MouseEvent<HTMLCanvasElement>) => {
-    if (!imageData || !onCanvasPick) {
+    if (!displayImageData || !pickImageData || !onCanvasPick) {
       return
     }
+
     const rect = event.currentTarget.getBoundingClientRect()
-    const scaleX = imageData.width / rect.width
-    const scaleY = imageData.height / rect.height
+    const localX = event.clientX - rect.left
+    const localY = event.clientY - rect.top
+
     const x = Math.max(
       0,
-      Math.min(imageData.width - 1, Math.floor((event.clientX - rect.left) * scaleX)),
+      Math.min(
+        pickImageData.width - 1,
+        Math.floor((localX / displayImageData.width) * pickImageData.width),
+      ),
     )
     const y = Math.max(
       0,
       Math.min(
-        imageData.height - 1,
-        Math.floor((event.clientY - rect.top) * scaleY),
+        pickImageData.height - 1,
+        Math.floor((localY / displayImageData.height) * pickImageData.height),
       ),
     )
     onCanvasPick(x, y)
@@ -106,15 +104,11 @@ export function CanvasView({
       onDragOver={handleDragOver}
     >
       <div ref={viewportRef} className="canvas-scroll">
-        {imageData ? (
-          <div
-            className="canvas-frame"
-            style={{ width: displayWidth, height: displayHeight }}
-          >
+        {displayImageData ? (
+          <div className="canvas-frame">
             <canvas
               ref={canvasRef}
               className="image-canvas"
-              style={{ width: displayWidth, height: displayHeight }}
               onClick={handleCanvasClick}
             />
           </div>

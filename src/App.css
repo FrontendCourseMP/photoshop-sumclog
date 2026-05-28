@@ -275,6 +275,22 @@
   accent-color: #3a78d8;
 }
 
+.side-panel select {
+  width: 100%;
+  border: 1px solid #3a3a3a;
+  background: #303030;
+  color: #efefef;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+.interpolation-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #9a9a9a;
+}
+
 .channels-list {
   display: grid;
   gap: 6px;
