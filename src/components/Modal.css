@@ -6,10 +6,16 @@
   color: #efefef;
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 32px);
+  position: fixed;
+  top: 72px;
+  left: 52px;
+  right: auto;
+  margin: 0;
 }
 
 .app-modal::backdrop {
-  background: rgba(0, 0, 0, 0.65);
+  background: transparent;
+  pointer-events: none;
 }
 
 .app-modal-inner {

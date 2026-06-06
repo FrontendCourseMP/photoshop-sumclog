@@ -111,21 +111,34 @@ export function applyLevels(
   const lutG = buildLevelsLut(settings.green)
   const lutB = buildLevelsLut(settings.blue)
   const lutA = buildLevelsLut(settings.alpha)
+  const lutMaster = buildLevelsLut(settings.master)
+  const applyMaster = !isDefaultChannelLevels(settings.master)
 
   for (let i = 0; i < src.length; i += 4) {
-    dst[i] = lutR[src[i]]
-    dst[i + 1] = lutG[src[i + 1]]
-    dst[i + 2] = lutB[src[i + 2]]
+    let r = src[i]
+    let g = src[i + 1]
+    let b = src[i + 2]
+
+    if (applyMaster) {
+      const lum = luminance(r, g, b)
+      const newLum = lutMaster[lum]
+      if (lum > 0) {
+        const scale = newLum / lum
+        r = Math.max(0, Math.min(255, Math.round(r * scale)))
+        g = Math.max(0, Math.min(255, Math.round(g * scale)))
+        b = Math.max(0, Math.min(255, Math.round(b * scale)))
+      } else {
+        r = g = b = newLum
+      }
+    }
+
+    dst[i] = lutR[r]
+    dst[i + 1] = lutG[g]
+    dst[i + 2] = lutB[b]
     dst[i + 3] = lutA[src[i + 3]]
   }
 
   return output
-}
-
-export function cloneImageData(imageData: ImageData): ImageData {
-  const copy = new ImageData(imageData.width, imageData.height)
-  copy.data.set(imageData.data)
-  return copy
 }
 
 export function clampChannelLevels(levels: ChannelLevels): ChannelLevels {
@@ -136,6 +149,20 @@ export function clampChannelLevels(levels: ChannelLevels): ChannelLevels {
   const gamma = Math.max(0.1, Math.min(9.9, levels.gamma))
 
   return { inBlack: black, inWhite: white, gamma }
+}
+
+export function isDefaultChannelLevels(levels: ChannelLevels): boolean {
+  return (
+    levels.inBlack === DEFAULT_CHANNEL_LEVELS.inBlack &&
+    levels.inWhite === DEFAULT_CHANNEL_LEVELS.inWhite &&
+    levels.gamma === DEFAULT_CHANNEL_LEVELS.gamma
+  )
+}
+
+export function cloneImageData(imageData: ImageData): ImageData {
+  const copy = new ImageData(imageData.width, imageData.height)
+  copy.data.set(imageData.data)
+  return copy
 }
 
 export function gammaToSliderPosition(

@@ -5,10 +5,16 @@
   background: transparent;
   color: #e8e8e8;
   max-width: calc(100vw - 32px);
+  position: fixed;
+  top: 72px;
+  left: 52px;
+  right: auto;
+  margin: 0;
 }
 
 .levels-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.55);
+  background: transparent;
+  pointer-events: none;
 }
 
 .levels-dialog-inner {

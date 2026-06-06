@@ -222,19 +222,10 @@ export function LevelsDialog({
 
   const updateSettings = useCallback(
     (channel: LevelsChannel, levels: ChannelLevels) => {
-      setSettings((prev) => {
-        const clamped = clampChannelLevels(levels)
-        if (channel === 'master') {
-          return {
-            ...prev,
-            master: clamped,
-            red: clamped,
-            green: clamped,
-            blue: clamped,
-          }
-        }
-        return { ...prev, [channel]: clamped }
-      })
+      setSettings((prev) => ({
+        ...prev,
+        [channel]: clampChannelLevels(levels),
+      }))
     },
     [],
   )
@@ -283,20 +274,10 @@ export function LevelsDialog({
   }
 
   const handleReset = () => {
-    if (activeChannel === 'master') {
-      setSettings((prev) => ({
-        ...prev,
-        master: { ...DEFAULT_CHANNEL_LEVELS },
-        red: { ...DEFAULT_CHANNEL_LEVELS },
-        green: { ...DEFAULT_CHANNEL_LEVELS },
-        blue: { ...DEFAULT_CHANNEL_LEVELS },
-      }))
-    } else {
-      setSettings((prev) => ({
-        ...prev,
-        [activeChannel]: { ...DEFAULT_CHANNEL_LEVELS },
-      }))
-    }
+    setSettings((prev) => ({
+      ...prev,
+      [activeChannel]: { ...DEFAULT_CHANNEL_LEVELS },
+    }))
   }
 
   const handleCancel = () => {
