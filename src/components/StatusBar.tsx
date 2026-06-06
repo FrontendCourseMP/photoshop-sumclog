@@ -4,10 +4,11 @@ type StatusBarProps = {
   width: number | null
   height: number | null
   sourceFormat: SourceFormat
+  hasAlpha: boolean
   viewScalePercent: number
 }
 
-function getColorDepth(format: SourceFormat): string {
+function getColorDepth(format: SourceFormat, hasAlpha: boolean): string {
   if (format === 'gb7') {
     return '7-бит grayscale'
   }
@@ -17,7 +18,7 @@ function getColorDepth(format: SourceFormat): string {
   }
 
   if (format === 'png') {
-    return '32-бит RGBA'
+    return hasAlpha ? '32-бит RGBA' : '24-бит RGB'
   }
 
   return 'изображение не загружено'
@@ -27,6 +28,7 @@ export function StatusBar({
   width,
   height,
   sourceFormat,
+  hasAlpha,
   viewScalePercent,
 }: StatusBarProps) {
   const hasSize = width !== null && height !== null
@@ -38,7 +40,7 @@ export function StatusBar({
   return (
     <footer className="status-bar">
       <span className="status-info">
-        {size} | {getColorDepth(sourceFormat)}
+        {size} | {getColorDepth(sourceFormat, hasAlpha)}
       </span>
     </footer>
   )

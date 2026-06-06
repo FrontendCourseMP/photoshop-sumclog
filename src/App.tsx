@@ -294,14 +294,14 @@ function App() {
   }
 
   const handleEyedropperSample = (x: number, y: number) => {
-    if (!processedImageData) {
+    if (!baseImageData) {
       return
     }
-    const index = (y * processedImageData.width + x) * 4
-    const r = processedImageData.data[index]
-    const g = processedImageData.data[index + 1]
-    const b = processedImageData.data[index + 2]
-    const a = processedImageData.data[index + 3]
+    const index = (y * baseImageData.width + x) * 4
+    const r = baseImageData.data[index]
+    const g = baseImageData.data[index + 1]
+    const b = baseImageData.data[index + 2]
+    const a = baseImageData.data[index + 3]
     setEyedropperSample({
       x,
       y,
@@ -417,7 +417,7 @@ function App() {
 
       <CanvasView
         displayImageData={displayImageData}
-        pickImageData={processedImageData}
+        pickImageData={baseImageData}
         onFileDrop={(file) => void handleFile(file)}
         onViewportReady={handleViewportReady}
         onCanvasPick={activeTool === 'eyedropper' ? handleEyedropperSample : undefined}
@@ -440,6 +440,7 @@ function App() {
         width={imageWidth}
         height={imageHeight}
         sourceFormat={sourceFormat}
+        hasAlpha={imageCharacteristics.hasAlpha}
         viewScalePercent={viewScalePercent}
       />
     </div>
