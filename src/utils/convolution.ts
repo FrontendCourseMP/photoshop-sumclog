@@ -78,6 +78,24 @@ export const KERNEL_PRESETS: KernelPreset[] = [
 
 export const DEFAULT_KERNEL = [...KERNEL_PRESETS[0].values] as number[]
 
+const KERNEL_COMPARE_EPSILON = 1e-4
+
+export function kernelsEqual(
+  left: readonly number[],
+  right: readonly number[],
+  epsilon = KERNEL_COMPARE_EPSILON,
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => Math.abs(value - right[index]) <= epsilon)
+  )
+}
+
+export function findMatchingPresetId(kernel: readonly number[]): KernelPresetId {
+  const match = KERNEL_PRESETS.find((preset) => kernelsEqual(kernel, preset.values))
+  return match?.id ?? 'identity'
+}
+
 const KERNEL_RADIUS = 1
 const ROWS_PER_YIELD = 24
 

@@ -3,6 +3,7 @@ import { cloneImageData } from '../utils/levels'
 import {
   applyKernelConvolution,
   DEFAULT_KERNEL,
+  findMatchingPresetId,
   KERNEL_PRESETS,
   type EdgePadding,
   type FilterChannelMask,
@@ -138,11 +139,10 @@ export function CustomFilterDialog({
   }
 
   const handleKernelCellChange = (index: number, raw: string) => {
-    setKernel((prev) => {
-      const next = [...prev]
-      next[index] = parseKernelInput(raw)
-      return next
-    })
+    const next = [...kernel]
+    next[index] = parseKernelInput(raw)
+    setKernel(next)
+    setPresetId(findMatchingPresetId(next))
     setError(null)
   }
 
