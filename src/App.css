@@ -27,19 +27,18 @@
   position: relative;
 }
 
-.menu-dropdown > summary {
-  list-style: none;
+.menu-dropdown-trigger {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 2px;
 }
 
-.menu-dropdown > summary::-webkit-details-marker {
-  display: none;
-}
-
-.menu-dropdown[open] > summary,
-.menu-dropdown > summary:hover {
+.menu-dropdown.open > .menu-dropdown-trigger,
+.menu-dropdown-trigger:hover {
   background: #333;
 }
 
